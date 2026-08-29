@@ -43,13 +43,10 @@ const NAV_ITEMS = [
 function BrandMark() {
   return (
     <div className="flex min-w-0 items-center gap-2.5">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-black text-orange-600">
-        FB
-      </div>
       <div className="min-w-0">
-        <h2 className="truncate text-xs font-bold tracking-tight">Fresh Bites</h2>
-        <span className="text-[10px] font-medium tracking-wide text-orange-100 uppercase">
-          Backoffice
+        <h2 className="truncate text-sm font-bold tracking-tight text-white">Fresh Bites</h2>
+        <span className="text-[10px] font-mono font-medium tracking-wider text-zinc-500 uppercase">
+          Management
         </span>
       </div>
     </div>
@@ -76,11 +73,13 @@ function NavLinks({
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              'flex min-h-10 items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition',
-              isActive ? 'bg-white text-orange-700' : 'text-orange-50 hover:bg-white/15'
+              'flex min-h-9 items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium transition cursor-pointer',
+              isActive
+                ? 'bg-zinc-800 text-white font-semibold'
+                : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
             )}
           >
-            <Icon className="size-4 shrink-0" />
+            <Icon className={cn('size-4 shrink-0', isActive ? 'text-white' : 'text-zinc-500')} />
             <span>{item.label}</span>
           </Link>
         );
@@ -95,6 +94,7 @@ function SidebarPanel({
   profileName,
   profileEmail,
   onNavigate,
+  onChangePassword,
   onSignOut,
 }: {
   pathname: string;
@@ -102,43 +102,53 @@ function SidebarPanel({
   profileName: string;
   profileEmail: string;
   onNavigate: () => void;
+  onChangePassword: () => void;
   onSignOut: () => void;
 }) {
   return (
-    <>
-      <div className="flex items-center gap-2.5 border-b border-white/15 px-4 py-4">
+    <div className="flex h-full flex-col bg-zinc-950 text-white">
+      <div className="flex items-center gap-2.5 border-b border-zinc-800 px-4 py-4">
         <BrandMark />
       </div>
       <div className="p-3">
         <Link
           href="/pos"
           onClick={onNavigate}
-          className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-white/15 px-3 py-2 text-xs font-semibold transition hover:bg-white/25"
+          className="flex min-h-9 w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-800 hover:text-white cursor-pointer"
         >
-          <Monitor className="size-3.5" />
+          <Monitor className="size-3.5 text-zinc-400" />
           <span>Open Register</span>
         </Link>
       </div>
       <NavLinks pathname={pathname} onNavigate={onNavigate} />
-      <div className="flex items-center justify-between border-t border-white/15 p-3">
+      <div className="flex items-center justify-between border-t border-zinc-800 p-3">
         <div className="mr-1 flex min-w-0 items-center gap-2">
-          <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/15 font-mono text-[10px] font-bold">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-zinc-800 border border-zinc-700 font-mono text-[10px] font-bold text-zinc-300">
             {userInitials}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-xs font-semibold leading-tight">{profileName}</p>
-            <p className="mt-0.5 truncate text-[10px] text-orange-100">{profileEmail}</p>
+            <p className="truncate text-xs font-semibold leading-tight text-zinc-200">{profileName}</p>
+            <p className="mt-0.5 truncate text-[10px] text-zinc-500 font-mono">{profileEmail}</p>
           </div>
         </div>
-        <button
-          onClick={onSignOut}
-          className="shrink-0 cursor-pointer rounded-md p-1.5 text-orange-100 transition hover:bg-white/15 hover:text-white"
-          title="Sign Out"
-        >
-          <LogOut className="size-4" />
-        </button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            onClick={onChangePassword}
+            className="cursor-pointer rounded-md p-1.5 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200"
+            title="Change Password"
+          >
+            <KeyRound className="size-3.5" />
+          </button>
+          <button
+            onClick={onSignOut}
+            className="cursor-pointer rounded-md p-1.5 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-200"
+            title="Sign out"
+          >
+            <LogOut className="size-3.5" />
+          </button>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -147,6 +157,7 @@ export function DashboardNav({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, profile, loading, isAdmin, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -174,9 +185,9 @@ export function DashboardNav({ children }: { children: React.ReactNode }) {
 
   if (loading || !user || !isAdmin) {
     return (
-      <div className="pos-canvas flex min-h-dvh flex-col items-center justify-center gap-2">
-        <Loader2 className="size-6 animate-spin text-orange-500" />
-        <span className="text-sm font-medium text-stone-500">Loading backoffice…</span>
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-2 bg-white">
+        <Loader2 className="size-6 animate-spin text-zinc-800" />
+        <span className="text-sm font-medium text-zinc-500">Loading backoffice…</span>
       </div>
     );
   }
@@ -185,14 +196,18 @@ export function DashboardNav({ children }: { children: React.ReactNode }) {
     pathname,
     userInitials,
     profileName: profile?.full_name || 'Admin User',
-    profileEmail: profile?.email || 'admin@freshbites.com',
+    profileEmail: profile?.email || 'admin@store.com',
     onNavigate: () => setMobileOpen(false),
+    onChangePassword: () => {
+      setMobileOpen(false);
+      setPasswordOpen(true);
+    },
     onSignOut: () => signOut(),
   };
 
   return (
-    <div className="flex h-dvh overflow-hidden">
-      <aside className="hidden w-60 shrink-0 flex-col bg-orange-600 text-white select-none lg:flex">
+    <div className="flex h-dvh overflow-hidden bg-white">
+      <aside className="hidden w-60 shrink-0 flex-col bg-zinc-950 border-r border-zinc-800 text-white select-none lg:flex">
         <SidebarPanel {...sidebarProps} />
       </aside>
 
@@ -200,7 +215,7 @@ export function DashboardNav({ children }: { children: React.ReactNode }) {
         <SheetContent
           side="left"
           showCloseButton={false}
-          className="w-[min(18rem,88vw)] gap-0 bg-orange-600 p-0 text-white"
+          className="w-[min(18rem,88vw)] gap-0 bg-zinc-950 p-0 text-white border-r border-zinc-800"
         >
           <SheetTitle className="sr-only">Backoffice navigation</SheetTitle>
           <div className="flex h-full flex-col">
@@ -209,12 +224,12 @@ export function DashboardNav({ children }: { children: React.ReactNode }) {
         </SheetContent>
       </Sheet>
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex shrink-0 items-center gap-3 border-b border-orange-700 bg-orange-600 px-3 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2.5 text-white lg:hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-white">
+        <header className="flex shrink-0 items-center gap-3 border-b border-zinc-800 bg-zinc-950 px-3 pt-[max(0.625rem,env(safe-area-inset-top))] pb-2.5 text-white lg:hidden">
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white/15"
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 cursor-pointer"
             aria-label="Open menu"
           >
             <Menu className="size-5" />
@@ -222,17 +237,19 @@ export function DashboardNav({ children }: { children: React.ReactNode }) {
           <BrandMark />
           <Link
             href="/pos"
-            className="ml-auto flex size-10 items-center justify-center rounded-lg bg-white/15"
+            className="ml-auto flex size-9 items-center justify-center rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 cursor-pointer"
             title="Open Register"
           >
             <Monitor className="size-4" />
           </Link>
         </header>
 
-        <main className="pos-canvas min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <main className="bg-white min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
           {children}
         </main>
       </div>
+
+      <ChangePasswordModal open={passwordOpen} onOpenChange={setPasswordOpen} />
     </div>
   );
 }
