@@ -118,10 +118,21 @@ export function buildReceiptLines(
     lines.push({ kind: 'sep' });
     lines.push({
       kind: 'text',
-      text: settings.receipt_footer || 'Shukriya! Please visit again.',
+      text: settings.receipt_footer || 'Thank You For Your Order!',
+      align: 'center',
+      bold: true,
+    });
+    lines.push({
+      kind: 'text',
+      text: '7 Gen Marketing Software',
+      align: 'center',
+      bold: true,
+    });
+    lines.push({
+      kind: 'text',
+      text: '0303-6690760, 0300-6031380',
       align: 'center',
     });
-    lines.push({ kind: 'text', text: 'Software generated receipt', align: 'center' });
   } else {
     lines.push({ kind: 'sep' });
     lines.push({ kind: 'text', text: 'Prepare and pack this order', align: 'center', bold: true });
