@@ -29,12 +29,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
   const router = useRouter();
   const pathname = usePathname();
 
+  const isConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
+
   const fetchProfile = async (userId: string) => {
+    if (!isConfigured) return;
     try {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -42,7 +45,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error || !data) {
-        // Fallback profile if profile row wasn't ready
         const defaultProf: Profile = {
           id: userId,
           email: user?.email || 'cashier@freshbites.com',
@@ -74,6 +76,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    if (!isConfigured) {
+      setLoading(false);
+      return;
+    }
+
+    const supabase = createClient();
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -107,10 +115,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isConfigured]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    if (isConfigured) {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    }
     setUser(null);
     setProfile(null);
     router.push('/login');
