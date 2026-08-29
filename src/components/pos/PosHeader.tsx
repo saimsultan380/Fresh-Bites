@@ -129,6 +129,13 @@ export function PosHeader({ settings, onOpenRecentOrders, onFocusSearch }: PosHe
             </div>
           </div>
           <button
+            onClick={() => setPasswordOpen(true)}
+            className="flex size-9 cursor-pointer items-center justify-center rounded-lg transition hover:bg-white/20"
+            title="Change Password"
+          >
+            <KeyRound className="size-4" />
+          </button>
+          <button
             onClick={() => signOut()}
             className="flex size-9 cursor-pointer items-center justify-center rounded-lg transition hover:bg-white/20"
             title="Sign Out"
@@ -137,6 +144,8 @@ export function PosHeader({ settings, onOpenRecentOrders, onFocusSearch }: PosHe
           </button>
         </div>
       </div>
+
+      <ChangePasswordModal open={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </header>
   );
 }

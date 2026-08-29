@@ -62,26 +62,32 @@ export default function LoginPage() {
       return;
     }
 
+    let cancelled = false;
+
     const loadStaff = async () => {
       setStaffLoading(true);
       try {
-        const { data, error } = await supabase
+        const client = createClient();
+        const { data, error } = await client
           .from('profiles')
           .select('id, full_name, email, role')
           .eq('is_active', true)
           .order('full_name', { ascending: true });
 
         if (error) throw error;
-        setStaff((data || []) as StaffDirectoryItem[]);
+        if (!cancelled) setStaff((data || []) as StaffDirectoryItem[]);
       } catch (err) {
         console.error('Failed to load staff directory:', err);
-        setStaff([]);
+        if (!cancelled) setStaff([]);
       } finally {
-        setStaffLoading(false);
+        if (!cancelled) setStaffLoading(false);
       }
     };
 
     void loadStaff();
+    return () => {
+      cancelled = true;
+    };
   }, [supabaseReady]);
 
   const redirectAfterLogin = async (userId: string) => {

@@ -13,6 +13,8 @@ import {
   Scissors,
   Percent,
   Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
@@ -35,6 +37,9 @@ export default function StoreSettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [showAdminPin, setShowAdminPin] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const loadSettings = async () => {
     setLoading(true);
@@ -485,14 +490,24 @@ export default function StoreSettingsPage() {
               <label className="block text-xs font-bold text-stone-700 mb-1">
                 Master Admin Authorization PIN *
               </label>
-              <input
-                type="password"
-                maxLength={6}
-                value={settings.admin_pin || ''}
-                onChange={(e) => setSettings({ ...settings, admin_pin: e.target.value })}
-                placeholder="1234"
-                className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-lg text-xs font-mono font-bold tracking-widest focus:border-orange-400 focus:ring-3 focus:ring-orange-500/15 focus:outline-none"
-              />
+              <div className="relative">
+                <input
+                  type={showAdminPin ? 'text' : 'password'}
+                  maxLength={6}
+                  value={settings.admin_pin || ''}
+                  onChange={(e) => setSettings({ ...settings, admin_pin: e.target.value })}
+                  placeholder="1234"
+                  className="w-full px-3 py-2 pr-10 bg-stone-50 border border-stone-300 rounded-lg text-xs font-mono font-bold tracking-widest focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPin(!showAdminPin)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 cursor-pointer"
+                  title={showAdminPin ? 'Hide PIN' : 'Show PIN'}
+                >
+                  {showAdminPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               <p className="text-[10px] text-stone-400 mt-1">
                 Used to authorize manager overrides and void operations.
               </p>
@@ -533,30 +548,50 @@ export default function StoreSettingsPage() {
               <label className="block font-bold text-zinc-700 uppercase tracking-wider">
                 New Password
               </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="At least 6 characters"
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none"
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                  className="w-full px-3 py-2 pr-10 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                  title={showNewPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-1.5">
               <label className="block font-bold text-zinc-700 uppercase tracking-wider">
                 Confirm Password
               </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Repeat new password"
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat new password"
+                  className="w-full px-3 py-2 pr-10 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                  title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           </div>
 

@@ -249,7 +249,7 @@ export function DashboardNav({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      <ChangePasswordModal open={passwordOpen} onOpenChange={setPasswordOpen} />
+      <ChangePasswordModal open={passwordOpen} onClose={() => setPasswordOpen(false)} />
     </div>
   );
 }
