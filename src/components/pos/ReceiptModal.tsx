@@ -109,8 +109,8 @@ export function ReceiptModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#1a120e]/75 p-0 backdrop-blur-sm select-none sm:items-center sm:p-3">
-      <div className="flex max-h-[100dvh] w-full max-w-sm flex-col overflow-hidden rounded-t-2xl border border-stone-200 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-100 sm:max-h-[95dvh] sm:rounded-2xl">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-2 sm:p-4 backdrop-blur-xs select-none overflow-hidden">
+      <div className="flex h-full max-h-[88dvh] sm:max-h-[85dvh] w-full max-w-sm flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-100">
         <div className="flex shrink-0 items-center justify-between bg-emerald-600 px-4 py-3 text-white">
           <div className="flex items-center gap-2">
             <CheckCircle className="size-4" />
@@ -126,11 +126,11 @@ export function ReceiptModal({
           </button>
         </div>
 
-        <div className="flex justify-center overflow-y-auto bg-emerald-50/50 p-4">
+        <div className="flex-1 min-h-0 overflow-y-auto bg-stone-100/75 p-3 sm:p-4 flex justify-center">
           <div
             id="thermal-receipt"
             data-paper={settings.paper_width_mm || 80}
-            className={`w-full ${widthClass} border border-stone-200 bg-white p-3 font-mono text-[12px] leading-tight text-stone-950 shadow-sm select-text`}
+            className={`w-full ${widthClass} border border-stone-200 bg-white p-3.5 font-mono text-[12px] leading-tight text-stone-950 shadow-sm select-text rounded-lg my-auto`}
             style={{ maxWidth: settings.paper_width_mm === 58 ? '58mm' : '80mm' }}
           >
             {lines.map((line, idx) => {
@@ -164,7 +164,7 @@ export function ReceiptModal({
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-2 border-t border-emerald-100 bg-white p-3">
+        <div className="flex shrink-0 flex-col gap-2 border-t border-stone-200 bg-white p-3 shadow-xs">
           <div className="flex gap-2">
             <button
               type="button"
@@ -195,7 +195,7 @@ export function ReceiptModal({
               className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-50 py-2 text-xs font-bold text-emerald-800"
             >
               <MessageCircle className="size-3.5" />
-              Send on WhatsApp
+              <span>Send on WhatsApp</span>
             </a>
           )}
         </div>
