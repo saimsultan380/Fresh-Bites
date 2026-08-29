@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/authContext';
 import { StoreSettings } from '@/types/pos';
+import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
 import {
   Clock,
   Search,
@@ -11,6 +12,7 @@ import {
   Minimize,
   LogOut,
   LayoutDashboard,
+  KeyRound,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -25,6 +27,7 @@ export function PosHeader({ settings, onOpenRecentOrders, onFocusSearch }: PosHe
   const [timeStr, setTimeStr] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   useEffect(() => {
     const updateTime = () => {

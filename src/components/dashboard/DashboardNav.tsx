@@ -18,6 +18,7 @@ import {
   LogOut,
   Loader2,
   Menu,
+  KeyRound,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -25,6 +26,7 @@ import {
   SheetContent,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
 
 const NAV_ITEMS = [
   { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },

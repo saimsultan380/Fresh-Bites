@@ -12,8 +12,10 @@ import {
   Usb,
   Scissors,
   Percent,
+  Lock,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
 import {
   connectThermalPrinter,
   disconnectThermalPrinter,
@@ -29,6 +31,11 @@ export default function StoreSettingsPage() {
   const [printerReady, setPrinterReady] = useState(false);
   const [printerBusy, setPrinterBusy] = useState(false);
 
+  // Security / Password update
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
   const loadSettings = async () => {
     setLoading(true);
     try {
@@ -38,6 +45,33 @@ export default function StoreSettingsPage() {
       toast.error('Failed to load store settings: ' + err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateMyPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+
+      toast.success('Your admin login password has been updated in database');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      toast.error('Failed to update password: ' + err.message);
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -471,13 +505,75 @@ export default function StoreSettingsPage() {
           <button
             type="submit"
             disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-6 py-3 bg-zinc-950 hover:bg-zinc-800 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition shadow-sm cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>{isSaving ? 'Saving Settings...' : 'Save Store Settings'}</span>
           </button>
         </div>
       </form>
+
+      {/* Admin Security / Change My Password */}
+      <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-2xs space-y-4">
+        <div className="flex items-center gap-2 pb-3 border-b border-zinc-100">
+          <Lock className="w-4 h-4 text-zinc-700" />
+          <div>
+            <h2 className="font-bold text-sm text-zinc-900">
+              Change My Login Password
+            </h2>
+            <p className="text-[11px] text-zinc-500 font-medium">
+              Update the account password for your currently logged-in admin user in Supabase auth.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={handleUpdateMyPassword} className="space-y-4 max-w-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="space-y-1.5">
+              <label className="block font-bold text-zinc-700 uppercase tracking-wider">
+                New Password
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block font-bold text-zinc-700 uppercase tracking-wider">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repeat new password"
+                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isUpdatingPassword || !newPassword}
+            className="px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-2 cursor-pointer"
+          >
+            {isUpdatingPassword ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Lock className="w-3.5 h-3.5" />
+            )}
+            <span>Update Account Password</span>
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

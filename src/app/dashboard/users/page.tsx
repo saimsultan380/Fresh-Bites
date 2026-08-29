@@ -9,9 +9,13 @@ import {
   User,
   KeyRound,
   Edit2,
+  Lock,
   Trash2,
   Loader2,
   X,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -19,7 +23,7 @@ export default function UsersPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal
+  // Add / Edit Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [fullName, setFullName] = useState('');
@@ -29,6 +33,13 @@ export default function UsersPage() {
   const [pinCode, setPinCode] = useState('1234');
   const [isActive, setIsActive] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Change Password Modal
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [targetUser, setTargetUser] = useState<Profile | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const loadProfiles = async () => {
     setLoading(true);
@@ -73,7 +84,14 @@ export default function UsersPage() {
     setIsModalOpen(true);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const openPasswordModal = (p: Profile) => {
+    setTargetUser(p);
+    setNewPassword('');
+    setConfirmPassword('');
+    setIsPasswordModalOpen(true);
+  };
+
+  const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || !email.trim()) {
       toast.error('Full Name and Email are required');
@@ -81,6 +99,10 @@ export default function UsersPage() {
     }
     if (!editingProfile && !password.trim()) {
       toast.error('Password is required for new accounts');
+      return;
+    }
+    if (pinCode.trim().length < 4) {
+      toast.error('PIN code must be at least 4 digits');
       return;
     }
 
@@ -102,15 +124,16 @@ export default function UsersPage() {
         });
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
-        toast.success(`Updated staff user: ${fullName}`);
+
+        toast.success(`Updated ${fullName.trim()} successfully`);
       } else {
         const res = await fetch('/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            full_name: fullName.trim(),
             email: email.trim(),
             password: password.trim(),
+            full_name: fullName.trim(),
             role,
             pin_code: pinCode.trim(),
             is_active: isActive,
@@ -118,15 +141,48 @@ export default function UsersPage() {
         });
         const data = await res.json();
         if (!data.success) throw new Error(data.error);
-        toast.success(`Created ${role} account for ${fullName}`);
+
+        toast.success(`Created staff account for ${fullName.trim()}`);
       }
 
       setIsModalOpen(false);
       loadProfiles();
     } catch (err: any) {
-      toast.error('Error saving user: ' + err.message);
+      toast.error('Failed to save staff account: ' + err.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetUser) return;
+
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const res = await fetch(`/api/users/${targetUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
+
+      toast.success(`Password updated for ${targetUser.full_name}`);
+      setIsPasswordModalOpen(false);
+    } catch (err: any) {
+      toast.error('Failed to update password: ' + err.message);
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -139,200 +195,253 @@ export default function UsersPage() {
       });
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
-      toast.success(`${p.full_name} is now ${!p.is_active ? 'Active' : 'Deactivated'}`);
+
+      toast.success(`Account for ${p.full_name} is now ${!p.is_active ? 'Active' : 'Disabled'}`);
       loadProfiles();
     } catch (err: any) {
-      toast.error('Failed to update status: ' + err.message);
+      toast.error('Failed to toggle status: ' + err.message);
     }
   };
 
   return (
-    <div className="p-4 sm:p-6 flex flex-col gap-6 max-w-5xl mx-auto w-full">
+    <div className="p-8 space-y-6 max-w-7xl mx-auto w-full bg-white">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-100">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900 tracking-tight">
+          <h1 className="text-2xl font-black text-zinc-900 tracking-tight">
             Staff & User Management
           </h1>
-          <p className="text-xs text-stone-500 font-medium mt-0.5">
-            Manage admin operators, cashier accounts, security roles, and PIN overrides.
+          <p className="text-xs text-zinc-500 font-medium mt-0.5">
+            Manage staff accounts, assign terminal cashier roles, set authorization PINs, and update passwords.
           </p>
         </div>
 
-        <button
-          onClick={openAddModal}
-          className="flex w-full sm:w-auto items-center justify-center gap-1.5 px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Staff Member</span>
-        </button>
-      </div>
-
-      {/* Users Table */}
-      <div className="bg-white rounded-xl border border-stone-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-stone-50 text-stone-600 font-bold uppercase text-[10px] border-b border-stone-200">
-              <tr>
-                <th className="px-5 py-3.5">Staff Name</th>
-                <th className="px-5 py-3.5">Email Address</th>
-                <th className="px-5 py-3.5">System Role</th>
-                <th className="px-5 py-3.5">PIN Code</th>
-                <th className="px-5 py-3.5 text-center">Status</th>
-                <th className="px-5 py-3.5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100 font-medium">
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-stone-400">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-orange-500 mb-2" />
-                    Loading staff accounts...
-                  </td>
-                </tr>
-              ) : profiles.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-stone-400">
-                    No staff profiles found.
-                  </td>
-                </tr>
-              ) : (
-                profiles.map((p) => (
-                  <tr key={p.id} className="hover:bg-stone-50 transition">
-                    <td className="px-5 py-4 font-bold text-stone-900 text-sm">
-                      {p.full_name}
-                    </td>
-                    <td className="px-5 py-4 text-stone-600">
-                      {p.email}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase ${
-                          p.role === 'admin'
-                            ? 'bg-orange-100 text-orange-800 border border-orange-200'
-                            : 'bg-blue-100 text-blue-900 border border-blue-200'
-                        }`}
-                      >
-                        {p.role}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 font-mono font-bold text-stone-700">
-                      {p.pin_code ? '••••' : '—'}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <button
-                        onClick={() => handleToggleActive(p)}
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase transition cursor-pointer ${
-                          p.is_active
-                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                            : 'bg-stone-200 text-stone-600 hover:bg-stone-300'
-                        }`}
-                      >
-                        {p.is_active ? 'Active' : 'Inactive'}
-                      </button>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <button
-                        onClick={() => openEditModal(p)}
-                        className="p-1.5 bg-stone-100 hover:bg-orange-50 hover:text-orange-700 text-stone-700 rounded-lg transition"
-                        title="Edit User"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadProfiles}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+          <button
+            onClick={openAddModal}
+            className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Staff</span>
+          </button>
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Staff Grid Cards */}
+      {loading ? (
+        <div className="h-64 flex flex-col items-center justify-center text-zinc-400 space-y-2">
+          <Loader2 className="w-6 h-6 animate-spin text-zinc-700" />
+          <span className="text-xs font-medium">Loading database staff records...</span>
+        </div>
+      ) : profiles.length === 0 ? (
+        <div className="bg-zinc-50 border border-dashed border-zinc-300 rounded-2xl p-12 text-center space-y-3">
+          <Users className="w-8 h-8 text-zinc-400 mx-auto" />
+          <p className="font-bold text-sm text-zinc-700">No staff members found</p>
+          <p className="text-xs text-zinc-400">Click &quot;Add New Staff&quot; to create cashier or manager credentials.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {profiles.map((p) => {
+            const isAdmin = p.role === 'admin';
+            return (
+              <div
+                key={p.id}
+                className={`bg-white rounded-xl border p-5 space-y-4 shadow-2xs transition flex flex-col justify-between ${
+                  p.is_active ? 'border-zinc-200 hover:border-zinc-300' : 'border-zinc-200 bg-zinc-50/50 opacity-75'
+                }`}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                          isAdmin ? 'bg-zinc-900 text-white' : 'bg-orange-100 text-orange-800'
+                        }`}
+                      >
+                        {isAdmin ? <ShieldCheck className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-sm text-zinc-900 truncate">
+                          {p.full_name}
+                        </h3>
+                        <p className="text-[11px] text-zinc-500 font-mono truncate">{p.email}</p>
+                      </div>
+                    </div>
+
+                    <span
+                      className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border shrink-0 ${
+                        isAdmin
+                          ? 'bg-zinc-900 text-white border-zinc-900'
+                          : 'bg-orange-50 text-orange-800 border-orange-200'
+                      }`}
+                    >
+                      {isAdmin ? 'Store Admin' : 'Cashier'}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-zinc-100 grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-zinc-50 p-2.5 rounded-lg border border-zinc-100">
+                      <span className="text-[10px] text-zinc-400 uppercase font-bold block">Terminal PIN</span>
+                      <span className="font-mono font-bold text-zinc-900 tracking-wider">
+                        {p.pin_code || '••••'}
+                      </span>
+                    </div>
+
+                    <div className="bg-zinc-50 p-2.5 rounded-lg border border-zinc-100">
+                      <span className="text-[10px] text-zinc-400 uppercase font-bold block">Status</span>
+                      <span
+                        className={`font-bold text-xs flex items-center gap-1 ${
+                          p.is_active ? 'text-emerald-700' : 'text-zinc-500'
+                        }`}
+                      >
+                        {p.is_active ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                        {p.is_active ? 'Active' : 'Disabled'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="pt-2 border-t border-zinc-100 flex items-center justify-between gap-1.5">
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(p)}
+                      className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-semibold rounded-lg transition flex items-center gap-1 cursor-pointer"
+                      title="Edit Staff Member"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openPasswordModal(p)}
+                      className="px-2.5 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-semibold rounded-lg transition flex items-center gap-1 cursor-pointer"
+                      title="Change Password"
+                    >
+                      <Lock className="w-3 h-3" />
+                      <span>Password</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleToggleActive(p)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                      p.is_active
+                        ? 'text-rose-600 hover:bg-rose-50'
+                        : 'text-emerald-700 hover:bg-emerald-50'
+                    }`}
+                  >
+                    {p.is_active ? 'Disable' : 'Enable'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add / Edit Staff Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#1a120e]/70 backdrop-blur-xs p-0 sm:items-center sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl border border-stone-200 w-full max-w-md max-h-[92dvh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between px-6 py-4 bg-orange-600 text-white">
-              <h2 className="font-bold text-base tracking-tight">
-                {editingProfile ? 'Edit Staff Member' : 'Add New Staff Member'}
-              </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/65 backdrop-blur-xs p-4 select-none">
+          <div className="bg-white rounded-2xl shadow-2xl border border-zinc-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-zinc-900 text-white">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-zinc-300" />
+                <h2 className="font-bold text-xs uppercase tracking-wider">
+                  {editingProfile ? 'Edit Staff Member' : 'Add New Staff Member'}
+                </h2>
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-md text-stone-400 hover:text-white"
+                className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-4 sm:p-6 flex flex-col gap-4">
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Full Name *
+            <form onSubmit={handleSaveUser} className="p-5 space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="block font-bold text-zinc-700 uppercase tracking-wider">
+                  Full Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Counter Cashier 1"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-lg text-xs font-semibold focus:border-orange-400 focus:ring-3 focus:ring-orange-500/15 focus:outline-none"
+                  placeholder="e.g. Ali Ahmed"
+                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Email Address *
+              <div className="space-y-1.5">
+                <label className="block font-bold text-zinc-700 uppercase tracking-wider">
+                  Email Address <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="email"
                   required
-                  disabled={!!editingProfile}
-                  placeholder="e.g. cashier1@freshbites.com"
+                  disabled={Boolean(editingProfile)}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-lg text-xs font-semibold focus:border-orange-400 focus:ring-3 focus:ring-orange-500/15 focus:outline-none disabled:opacity-60"
+                  placeholder="ali@freshbites.com"
+                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none disabled:bg-zinc-100 disabled:text-zinc-500"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  {editingProfile ? 'New Password (leave blank to keep unchanged)' : 'Account Password *'}
-                </label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-lg text-xs font-medium focus:border-orange-400 focus:ring-3 focus:ring-orange-500/15 focus:outline-none"
-                />
-              </div>
+              {!editingProfile && (
+                <div className="space-y-1.5">
+                  <label className="block font-bold text-zinc-700 uppercase tracking-wider">
+                    Password <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 6 characters"
+                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none"
+                  />
+                </div>
+              )}
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">
-                    System Role *
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="block font-bold text-zinc-700 uppercase tracking-wider">
+                    Role
                   </label>
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-lg text-xs font-bold text-stone-800 focus:border-orange-400 focus:ring-3 focus:ring-orange-500/15 focus:outline-none"
+                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-semibold focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none"
                   >
-                    <option value="cashier">Cashier</option>
-                    <option value="admin">Administrator</option>
+                    <option value="cashier">Counter Cashier</option>
+                    <option value="admin">Store Admin</option>
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">
-                    PIN Code (4-digits)
+                <div className="space-y-1.5">
+                  <label className="block font-bold text-zinc-700 uppercase tracking-wider">
+                    Manager Override PIN
                   </label>
                   <input
                     type="password"
                     maxLength={6}
-                    placeholder="1234"
                     value={pinCode}
                     onChange={(e) => setPinCode(e.target.value)}
-                    className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-lg text-xs font-mono font-bold focus:border-orange-400 focus:ring-3 focus:ring-orange-500/15 focus:outline-none text-center"
+                    placeholder="1234"
+                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-mono font-bold text-center focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none"
                   />
                 </div>
               </div>
@@ -340,31 +449,116 @@ export default function UsersPage() {
               <div className="flex items-center gap-2 pt-2">
                 <input
                   type="checkbox"
-                  id="user_active"
+                  id="userActiveCheck"
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
-                  className="size-4 rounded border-stone-300 text-orange-600 focus:ring-orange-500"
+                  className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
                 />
-                <label htmlFor="user_active" className="text-xs font-bold text-stone-800 cursor-pointer">
-                  Account is active and permitted to login
+                <label htmlFor="userActiveCheck" className="text-xs font-semibold text-zinc-700 cursor-pointer">
+                  Account is active (can log in to POS terminal)
                 </label>
               </div>
 
-              <div className="flex gap-2 pt-4 border-t border-stone-200">
+              <div className="pt-3 border-t border-zinc-100 flex gap-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  disabled={isSubmitting}
-                  className="flex-1 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs rounded-lg transition"
+                  className="flex-1 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold rounded-lg transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs rounded-lg transition shadow-xs disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-zinc-950 hover:bg-zinc-800 text-white font-bold rounded-lg transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  {isSubmitting ? 'Saving...' : editingProfile ? 'Save User' : 'Create User'}
+                  {isSubmitting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <span>{editingProfile ? 'Update Staff' : 'Create Staff'}</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {isPasswordModalOpen && targetUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/65 backdrop-blur-xs p-4 select-none">
+          <div className="bg-white rounded-2xl shadow-2xl border border-zinc-200 w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-zinc-900 text-white">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-zinc-300" />
+                <h2 className="font-bold text-xs uppercase tracking-wider">
+                  Change Password
+                </h2>
+              </div>
+              <button
+                onClick={() => setIsPasswordModalOpen(false)}
+                className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleChangePassword} className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-200">
+                <span className="text-[10px] text-zinc-400 uppercase font-bold block">User Account</span>
+                <span className="font-bold text-zinc-900">{targetUser.full_name}</span>
+                <span className="text-[11px] text-zinc-500 font-mono block">{targetUser.email}</span>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block font-bold text-zinc-700 uppercase tracking-wider">
+                  New Password <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoFocus
+                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block font-bold text-zinc-700 uppercase tracking-wider">
+                  Confirm Password <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs font-medium focus:bg-white focus:ring-1 focus:ring-zinc-900 focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-zinc-100 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordModalOpen(false)}
+                  className="flex-1 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold rounded-lg transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isChangingPassword}
+                  className="flex-1 py-2.5 bg-zinc-950 hover:bg-zinc-800 text-white font-bold rounded-lg transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {isChangingPassword ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <span>Save Password</span>
+                  )}
                 </button>
               </div>
             </form>

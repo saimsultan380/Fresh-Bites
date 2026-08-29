@@ -1,14 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { getSupabaseAnonKey, getSupabaseUrl } from './config';
 
 export async function createClient() {
   const cookieStore = await cookies();
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const supabaseKey = (
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    'placeholder-anon-key'
-  );
+  const supabaseUrl = getSupabaseUrl() || 'https://placeholder.supabase.co';
+  const supabaseKey = getSupabaseAnonKey() || 'placeholder-anon-key';
 
   return createServerClient(
     supabaseUrl,

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { Profile } from '@/types/pos';
 import { useRouter, usePathname } from 'next/navigation';
 
@@ -32,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const isConfigured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const isConfigured = isSupabaseConfigured();
 
   const fetchProfile = async (userId: string) => {
     if (!isConfigured) return;
