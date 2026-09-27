@@ -96,6 +96,14 @@ export class EscPosEncoder {
     this.chunks.push(ESC, 0x40);
     // USA code page — ASCII amounts and English receipts
     this.chunks.push(ESC, 0x74, 0x00);
+    // Max print density on common XPrinter / Rongta / POS-80 clones (ESC 7)
+    this.chunks.push(ESC, 0x37, 0x07, 0x07, 0x07);
+    return this;
+  }
+
+  /** Emphasized / double-strike style for denser thermal dots */
+  emphasize(on: boolean): this {
+    this.chunks.push(ESC, 0x47, on ? 1 : 0);
     return this;
   }
 
@@ -151,24 +159,27 @@ export class EscPosEncoder {
   }
 
   encodeLines(lines: ReceiptLine[], cols: number): this {
+    // Keep emphasized mode on — darker burn on thermal paper
+    this.emphasize(true);
     for (const line of lines) {
       if (line.kind === 'blank') {
         this.line();
         continue;
       }
       if (line.kind === 'sep') {
-        this.align('left').bold(false).double(false).line(dashLine(cols));
+        this.align('left').bold(true).double(false).line(dashLine(cols));
         continue;
       }
       if (line.kind === 'row') {
-        this.align('left').bold(!!line.bold).double(false).line(padRow(line.left, line.right, cols));
+        this.align('left').bold(true).double(false).line(padRow(line.left, line.right, cols));
         continue;
       }
-      this.align(line.align || 'left').bold(!!line.bold).double(!!line.double);
+      this.align(line.align || 'left').bold(true).double(!!line.double);
       const wrapped = wrapText(line.text, line.double ? Math.floor(cols / 2) : cols);
       wrapped.forEach((part) => this.line(part));
-      this.double(false).bold(false);
+      this.double(false);
     }
+    this.emphasize(false).bold(false);
     return this;
   }
 

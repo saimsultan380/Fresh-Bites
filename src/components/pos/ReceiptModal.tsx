@@ -140,7 +140,7 @@ export function ReceiptModal({
               }}
             >
               <pre
-                className="m-0 whitespace-pre overflow-hidden font-mono text-[11px] leading-[1.25] text-stone-950"
+                className="m-0 whitespace-pre overflow-hidden font-mono text-[12px] font-bold leading-[1.25] text-black"
                 style={{ width: `${cols}ch` }}
               >
                 {previewLines.join('\n')}

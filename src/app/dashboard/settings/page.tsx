@@ -389,6 +389,10 @@ export default function StoreSettingsPage() {
                 <option value="escpos">USB ESC/POS (Web Serial)</option>
                 <option value="browser">Browser print (Windows POS-80)</option>
               </select>
+              <p className="mt-1 text-[10px] text-stone-400">
+                If print looks faded: Windows → Printers → POS-80-Series → Printing preferences → set Density /
+                Darkness to High or Darkest. Also avoid “Draft” quality in the Chrome print dialog.
+              </p>
             </div>
             <div>
               <label className="block text-xs font-bold text-stone-700 mb-1">Baud rate</label>
