@@ -5,7 +5,6 @@ import { Sale, StoreSettings } from '@/types/pos';
 import { Printer, CheckCircle, X, PlusCircle, MessageCircle } from 'lucide-react';
 import { buildReceiptLines, receiptWhatsAppText } from '@/lib/print/receipt';
 import { printCompletedSale, printSaleInBrowser, printSaleOnThermal, hasWebSerial } from '@/lib/print/thermalPrinter';
-import { flattenReceiptLines, paperCols } from '@/lib/print/escpos';
 import { toast } from 'sonner';
 
 interface ReceiptModalProps {
@@ -31,7 +30,6 @@ export function ReceiptModal({
 }: ReceiptModalProps) {
   const printedFor = useRef<string | null>(null);
   const [printing, setPrinting] = useState(false);
-  const cols = paperCols(settings.paper_width_mm || 80);
   const paperMm = settings.paper_width_mm === 58 ? 58 : 80;
 
   const handlePrint = async (silent = false) => {
@@ -91,7 +89,7 @@ export function ReceiptModal({
 
   if (!isOpen || !sale) return null;
 
-  const previewLines = flattenReceiptLines(buildReceiptLines(sale, settings, 'customer'), cols);
+  const lines = buildReceiptLines(sale, settings, 'customer');
 
   async function handleRawAgain() {
     if (!sale) return;
@@ -133,21 +131,40 @@ export function ReceiptModal({
             <div
               id="thermal-receipt"
               data-paper={paperMm}
-              className="overflow-hidden border border-stone-300 bg-white px-2 py-2 shadow-sm select-text rounded-sm"
-              style={{
-                width: `calc(${cols}ch + 1rem)`,
-                maxWidth: '100%',
-              }}
+              className="overflow-hidden border border-stone-300 bg-white px-2 py-2 text-black shadow-sm select-text rounded-sm"
+              style={{ width: paperMm === 58 ? '52mm' : '72mm', maxWidth: '100%' }}
             >
-              <pre
-                className="m-0 whitespace-pre overflow-hidden font-mono text-[12px] font-bold leading-[1.25] text-black"
-                style={{ width: `${cols}ch` }}
-              >
-                {previewLines.join('\n')}
-              </pre>
+              {lines.map((line, idx) => {
+                if (line.kind === 'title') {
+                  return (
+                    <div key={idx} className="slip-title">
+                      {line.text}
+                    </div>
+                  );
+                }
+                if (line.kind === 'sep') {
+                  return <div key={idx} className="slip-sep" />;
+                }
+                if (line.kind === 'blank') return <div key={idx} className="h-2" />;
+                if (line.kind === 'row') {
+                  return (
+                    <div key={idx} className={`slip-row ${line.bold ? 'slip-strong' : ''}`}>
+                      <span className="slip-lab">{line.left}</span>
+                      <span className="slip-val">{line.right}</span>
+                    </div>
+                  );
+                }
+                const align =
+                  line.align === 'center' ? 'slip-center' : line.align === 'right' ? 'slip-right' : 'slip-left';
+                return (
+                  <div key={idx} className={`${align} ${line.bold ? 'slip-strong' : ''}`}>
+                    {line.text}
+                  </div>
+                );
+              })}
             </div>
             <p className="mt-1.5 text-center text-[9px] font-medium text-stone-500">
-              {paperMm}mm preview · {cols} cols · matches thermal print
+              {paperMm}mm receipt · name and amount on one line
             </p>
           </div>
         </div>

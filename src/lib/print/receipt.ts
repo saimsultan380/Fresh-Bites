@@ -39,7 +39,7 @@ export function buildReceiptLines(
   const { date, time } = formatPkDate(sale.created_at);
   const lines: ReceiptLine[] = [];
 
-  lines.push({ kind: 'text', text: (settings.business_name || 'FRESH BITES').toUpperCase(), align: 'center', bold: true, double: true });
+  lines.push({ kind: 'title', text: (settings.business_name || 'FRESH BITES').toUpperCase() });
   if (settings.tagline) {
     lines.push({ kind: 'text', text: settings.tagline, align: 'center' });
   }
@@ -85,11 +85,12 @@ export function buildReceiptLines(
 
   (sale.sale_items || []).forEach((item) => {
     const name = item.item_type === 'deal' ? `[DEAL] ${item.product_name}` : item.product_name;
-    lines.push({ kind: 'text', text: name, align: 'left', bold: true });
+    const qty = Number(item.quantity) || 1;
     lines.push({
       kind: 'row',
-      left: ` ${item.quantity}x${money(item.unit_price)}`,
+      left: `${qty}x ${name}`,
       right: money(item.total),
+      bold: true,
     });
   });
 

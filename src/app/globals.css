@@ -164,6 +164,69 @@
 }
 
 /* Thermal receipt print — POS-80 / Windows driver (browser print) */
+.slip-title {
+  text-align: center;
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 1.15;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin: 0 0 2px;
+}
+
+.slip-center {
+  text-align: center;
+}
+
+.slip-right {
+  text-align: right;
+}
+
+.slip-left {
+  text-align: left;
+}
+
+.slip-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.slip-lab {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slip-val {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  text-align: right;
+  font-weight: 800;
+}
+
+.slip-strong {
+  font-weight: 800;
+}
+
+.slip-sep {
+  border-top: 1px dashed #000;
+  height: 0;
+  margin: 4px 0;
+}
+
+#thermal-receipt {
+  font-family: Consolas, 'Courier New', Courier, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #000;
+}
+
 @media print {
   html,
   body {
@@ -191,41 +254,39 @@
     position: absolute;
     left: 0;
     top: 0;
+    box-sizing: border-box !important;
     margin: 0 !important;
-    padding: 1mm 1mm 2mm !important;
-    /* Bold + larger = denser heat on thermal heads (fixes faded browser prints) */
+    padding: 1mm 2mm 2mm !important;
     font-family: Consolas, 'Courier New', Courier, monospace !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
     font-weight: 700 !important;
-    line-height: 1.22 !important;
-    letter-spacing: 0 !important;
+    line-height: 1.25 !important;
     color: #000000 !important;
     background: #ffffff !important;
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;
     overflow: hidden !important;
-    -webkit-font-smoothing: none !important;
-    font-smooth: never !important;
-    text-rendering: geometricPrecision !important;
   }
 
-  #thermal-receipt pre {
-    margin: 0 !important;
-    padding: 0 !important;
-    white-space: pre !important;
-    overflow: hidden !important;
-    font-family: inherit !important;
-    font-size: inherit !important;
-    font-weight: 700 !important;
-    line-height: inherit !important;
-    color: #000000 !important;
+  #thermal-receipt .slip-title {
+    font-size: 16px !important;
+    font-weight: 900 !important;
+    text-align: center !important;
+  }
+
+  #thermal-receipt .slip-row {
+    display: flex !important;
+    width: 100% !important;
+  }
+
+  #thermal-receipt .slip-val {
+    font-weight: 900 !important;
   }
 
   #thermal-receipt[data-paper='58'] {
     width: 48mm !important;
     max-width: 48mm !important;
-    font-size: 12px !important;
   }
 
   #thermal-receipt[data-paper='80'] {
@@ -233,7 +294,6 @@
     max-width: 72mm !important;
   }
 
-  /* Continuous roll — height follows content (no long blank page) */
   @page {
     size: 80mm auto;
     margin: 0;

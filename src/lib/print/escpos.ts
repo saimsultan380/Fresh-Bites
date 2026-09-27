@@ -1,6 +1,7 @@
 export type ReceiptAlign = 'left' | 'center' | 'right';
 
 export type ReceiptLine =
+  | { kind: 'title'; text: string }
   | { kind: 'text'; text: string; align?: ReceiptAlign; bold?: boolean; double?: boolean }
   | { kind: 'row'; left: string; right: string; bold?: boolean }
   | { kind: 'sep' }
@@ -44,6 +45,13 @@ export function flattenReceiptLines(lines: ReceiptLine[], cols: number): string[
   for (const line of lines) {
     if (line.kind === 'blank') {
       out.push('');
+      continue;
+    }
+    if (line.kind === 'title') {
+      const width = Math.floor(cols / 2);
+      const part = line.text.slice(0, width);
+      const pad = Math.max(0, Math.floor((width - part.length) / 2));
+      out.push(' '.repeat(pad) + part);
       continue;
     }
     if (line.kind === 'sep') {
@@ -164,6 +172,11 @@ export class EscPosEncoder {
     for (const line of lines) {
       if (line.kind === 'blank') {
         this.line();
+        continue;
+      }
+      if (line.kind === 'title') {
+        this.align('center').bold(true).double(true).line(line.text.slice(0, Math.floor(cols / 2)));
+        this.double(false);
         continue;
       }
       if (line.kind === 'sep') {
