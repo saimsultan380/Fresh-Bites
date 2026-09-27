@@ -1,10 +1,10 @@
 import { Sale, StoreSettings } from '@/types/pos';
-import { ReceiptLine, paperCols } from '@/lib/print/escpos';
+import { ReceiptLine, flattenReceiptLines, paperCols } from '@/lib/print/escpos';
 import { paymentMethodLabel } from '@/lib/constants/payments';
 import { orderTypeLabel } from '@/lib/constants/orders';
 
 function money(n: number): string {
-  return Math.round(Number(n) || 0).toLocaleString('en-PK');
+  return String(Math.round(Number(n) || 0));
 }
 
 function formatPkDate(iso: string): { date: string; time: string } {
@@ -15,13 +15,19 @@ function formatPkDate(iso: string): { date: string; time: string } {
     year: 'numeric',
     timeZone: 'Asia/Karachi',
   });
-  const time = d.toLocaleTimeString('en-PK', {
+  const time = d.toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true,
+    hour12: false,
     timeZone: 'Asia/Karachi',
   });
   return { date, time };
+}
+
+function shortName(name: string, max = 18): string {
+  const value = (name || '').trim();
+  if (value.length <= max) return value;
+  return value.slice(0, max - 1) + '.';
 }
 
 export function buildReceiptLines(
@@ -64,23 +70,25 @@ export function buildReceiptLines(
 
   lines.push({ kind: 'row', left: 'Invoice', right: sale.invoice_number });
   lines.push({ kind: 'row', left: 'Date', right: `${date} ${time}` });
-  lines.push({ kind: 'row', left: 'Cashier', right: sale.cashier_name || 'Counter' });
+  lines.push({ kind: 'row', left: 'Cashier', right: shortName(sale.cashier_name || 'Counter', cols - 10) });
   if (sale.table_no) lines.push({ kind: 'row', left: 'Table', right: sale.table_no });
-  if (sale.customer_name) lines.push({ kind: 'row', left: 'Customer', right: sale.customer_name });
+  if (sale.customer_name) {
+    lines.push({ kind: 'row', left: 'Customer', right: shortName(sale.customer_name, cols - 12) });
+  }
   if (sale.customer_phone) lines.push({ kind: 'row', left: 'Phone', right: sale.customer_phone });
   if (sale.delivery_address) {
     lines.push({ kind: 'text', text: `Addr: ${sale.delivery_address}`, align: 'left' });
   }
 
   lines.push({ kind: 'sep' });
-  lines.push({ kind: 'row', left: 'ITEM', right: 'AMOUNT', bold: true });
+  lines.push({ kind: 'row', left: 'ITEM', right: 'AMT', bold: true });
 
   (sale.sale_items || []).forEach((item) => {
     const name = item.item_type === 'deal' ? `[DEAL] ${item.product_name}` : item.product_name;
     lines.push({ kind: 'text', text: name, align: 'left', bold: true });
     lines.push({
       kind: 'row',
-      left: `  ${item.quantity} x ${money(item.unit_price)}`,
+      left: ` ${item.quantity}x${money(item.unit_price)}`,
       right: money(item.total),
     });
   });
@@ -138,19 +146,14 @@ export function buildReceiptLines(
     lines.push({ kind: 'text', text: 'Prepare and pack this order', align: 'center', bold: true });
   }
 
-  void cols;
   return lines;
 }
 
-export function receiptWhatsAppText(sale: Sale, settings: StoreSettings): string {
-  const lines = buildReceiptLines(sale, settings, 'customer');
+export function receiptPlainText(sale: Sale, settings: StoreSettings, copy: 'customer' | 'kitchen' = 'customer'): string {
   const cols = paperCols(settings.paper_width_mm || 80);
-  return lines
-    .map((line) => {
-      if (line.kind === 'sep') return '-'.repeat(Math.min(32, cols));
-      if (line.kind === 'blank') return '';
-      if (line.kind === 'row') return `${line.left}: ${line.right}`;
-      return line.text;
-    })
-    .join('\n');
+  return flattenReceiptLines(buildReceiptLines(sale, settings, copy), cols).join('\n');
+}
+
+export function receiptWhatsAppText(sale: Sale, settings: StoreSettings): string {
+  return receiptPlainText(sale, settings, 'customer');
 }

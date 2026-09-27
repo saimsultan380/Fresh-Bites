@@ -5,7 +5,7 @@ import { Sale, StoreSettings } from '@/types/pos';
 import { Printer, CheckCircle, X, PlusCircle, MessageCircle } from 'lucide-react';
 import { buildReceiptLines, receiptWhatsAppText } from '@/lib/print/receipt';
 import { printCompletedSale, printSaleInBrowser, printSaleOnThermal, hasWebSerial } from '@/lib/print/thermalPrinter';
-import { paperCols } from '@/lib/print/escpos';
+import { flattenReceiptLines, paperCols } from '@/lib/print/escpos';
 import { toast } from 'sonner';
 
 interface ReceiptModalProps {
@@ -32,7 +32,7 @@ export function ReceiptModal({
   const printedFor = useRef<string | null>(null);
   const [printing, setPrinting] = useState(false);
   const cols = paperCols(settings.paper_width_mm || 80);
-  const widthClass = settings.paper_width_mm === 58 ? 'max-w-[240px]' : 'max-w-[320px]';
+  const paperMm = settings.paper_width_mm === 58 ? 58 : 80;
 
   const handlePrint = async (silent = false) => {
     if (!sale) return;
@@ -48,9 +48,11 @@ export function ReceiptModal({
             : 'Print dialog opened'
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       printSaleInBrowser();
-      if (!silent) toast.error(err.message || 'Print failed — using browser print');
+      if (!silent) {
+        toast.error(err instanceof Error ? err.message : 'Print failed — using browser print');
+      }
     } finally {
       setPrinting(false);
     }
@@ -89,7 +91,7 @@ export function ReceiptModal({
 
   if (!isOpen || !sale) return null;
 
-  const lines = buildReceiptLines(sale, settings, 'customer');
+  const previewLines = flattenReceiptLines(buildReceiptLines(sale, settings, 'customer'), cols);
 
   async function handleRawAgain() {
     if (!sale) return;
@@ -101,8 +103,8 @@ export function ReceiptModal({
       } else {
         printSaleInBrowser();
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Printer not connected');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Printer not connected');
     } finally {
       setPrinting(false);
     }
@@ -126,41 +128,27 @@ export function ReceiptModal({
           </button>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto bg-stone-100/75 p-3 sm:p-4 flex justify-center">
-          <div
-            id="thermal-receipt"
-            data-paper={settings.paper_width_mm || 80}
-            className={`w-full ${widthClass} border border-stone-200 bg-white p-3.5 font-mono text-[12px] leading-tight text-stone-950 shadow-sm select-text rounded-lg my-auto`}
-            style={{ maxWidth: settings.paper_width_mm === 58 ? '58mm' : '80mm' }}
-          >
-            {lines.map((line, idx) => {
-              if (line.kind === 'sep') {
-                return (
-                  <div key={idx} className="my-1 overflow-hidden text-stone-400">
-                    {'-'.repeat(cols)}
-                  </div>
-                );
-              }
-              if (line.kind === 'blank') return <div key={idx} className="h-2" />;
-              if (line.kind === 'row') {
-                return (
-                  <div key={idx} className={`flex justify-between gap-2 ${line.bold ? 'font-black' : ''}`}>
-                    <span>{line.left}</span>
-                    <span className="shrink-0">{line.right}</span>
-                  </div>
-                );
-              }
-              const align =
-                line.align === 'center' ? 'text-center' : line.align === 'right' ? 'text-right' : 'text-left';
-              return (
-                <div
-                  key={idx}
-                  className={`${align} ${line.bold ? 'font-black' : ''} ${line.double ? 'text-sm tracking-wide' : ''}`}
-                >
-                  {line.text}
-                </div>
-              );
-            })}
+        <div className="flex-1 min-h-0 overflow-y-auto bg-stone-200/80 p-3 sm:p-4">
+          <div className="mx-auto w-fit max-w-full">
+            <div
+              id="thermal-receipt"
+              data-paper={paperMm}
+              className="overflow-hidden border border-stone-300 bg-white px-2 py-2 shadow-sm select-text rounded-sm"
+              style={{
+                width: `calc(${cols}ch + 1rem)`,
+                maxWidth: '100%',
+              }}
+            >
+              <pre
+                className="m-0 whitespace-pre overflow-hidden font-mono text-[11px] leading-[1.25] text-stone-950"
+                style={{ width: `${cols}ch` }}
+              >
+                {previewLines.join('\n')}
+              </pre>
+            </div>
+            <p className="mt-1.5 text-center text-[9px] font-medium text-stone-500">
+              {paperMm}mm preview · {cols} cols · matches thermal print
+            </p>
           </div>
         </div>
 
@@ -200,6 +188,8 @@ export function ReceiptModal({
           )}
         </div>
       </div>
+
+      {/* Browser/Windows POS-80 print uses #thermal-receipt only */}
     </div>
   );
 }

@@ -106,7 +106,7 @@ export default function StoreSettingsPage() {
         auto_print: settings.auto_print,
         auto_cut: settings.auto_cut,
         cut_mode: settings.cut_mode,
-        feed_lines_before_cut: Number(settings.feed_lines_before_cut) || 4,
+        feed_lines_before_cut: Math.max(1, Math.min(6, Number(settings.feed_lines_before_cut) || 2)),
         print_copies: Math.max(1, Number(settings.print_copies) || 1),
         print_kitchen_copy: settings.print_kitchen_copy,
         open_cash_drawer: settings.open_cash_drawer,
@@ -287,7 +287,10 @@ export default function StoreSettingsPage() {
           </div>
 
           <p className="text-[11px] text-stone-500">
-            Connect a USB XPrinter / Rongta / Epson clone in Chrome or Edge on the counter PC. ESC/POS sends the receipt, opens the cash drawer on cash sales, then auto-cuts the paper.
+            If you installed the Windows <span className="font-semibold text-stone-700">POS-80-Series</span> driver
+            (with paper cutter / chopper), set connection to <span className="font-semibold text-stone-700">Browser print (Windows POS-80)</span>,
+            then choose <span className="font-mono">POS-80-Series</span> in the print dialog. For direct USB ESC/POS
+            (no Windows driver), use Chrome/Edge and Connect printer below.
           </p>
 
           <div className="flex flex-wrap gap-2">
@@ -383,8 +386,8 @@ export default function StoreSettingsPage() {
                 }
                 className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-lg text-xs font-bold"
               >
-                <option value="escpos">USB ESC/POS (auto-cut)</option>
-                <option value="browser">Browser print dialog</option>
+                <option value="escpos">USB ESC/POS (Web Serial)</option>
+                <option value="browser">Browser print (Windows POS-80)</option>
               </select>
             </div>
             <div>
@@ -418,9 +421,10 @@ export default function StoreSettingsPage() {
                 min={1}
                 max={12}
                 value={settings.feed_lines_before_cut}
-                onChange={(e) => setSettings({ ...settings, feed_lines_before_cut: parseInt(e.target.value, 10) || 4 })}
+                onChange={(e) => setSettings({ ...settings, feed_lines_before_cut: Math.max(1, Math.min(6, parseInt(e.target.value, 10) || 2)) })}
                 className="w-full px-3 py-2 bg-stone-50 border border-stone-300 rounded-lg text-xs font-mono font-bold"
               />
+              <p className="mt-1 text-[10px] text-stone-400">Use 1–3 for short slips (recommended: 2)</p>
             </div>
             <div>
               <label className="block text-xs font-bold text-stone-700 mb-1">Customer copies</label>

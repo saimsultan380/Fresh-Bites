@@ -110,7 +110,9 @@ function encodeJob(
 ): Uint8Array {
   const encoder = new EscPosEncoder().init();
   encoder.encodeLines(buildReceiptLines(sale, settings, copy), paperCols(settings.paper_width_mm || 80));
-  encoder.feed(Math.max(1, Number(settings.feed_lines_before_cut) || 4));
+  // Tight feed: just enough paper past the tear/cut bar, not a long blank tail
+  const feed = Math.max(1, Math.min(6, Number(settings.feed_lines_before_cut) || 2));
+  encoder.feed(feed);
   if (options.cut && settings.auto_cut) {
     encoder.cut(settings.cut_mode === 'full' ? 'full' : 'partial');
   }
@@ -165,7 +167,7 @@ export async function testPrintAndCut(settings: StoreSettings): Promise<void> {
     .line('Printer test')
     .line(`${settings.paper_width_mm || 80}mm  |  cut: ${settings.cut_mode}`)
     .line(new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' }))
-    .feed(Math.max(2, Number(settings.feed_lines_before_cut) || 4));
+    .feed(Math.max(1, Math.min(6, Number(settings.feed_lines_before_cut) || 2)));
   if (settings.auto_cut) encoder.cut(settings.cut_mode === 'full' ? 'full' : 'partial');
   if (settings.open_cash_drawer) encoder.cashDrawer();
   await sendEscPos(encoder.bytes(), settings.printer_baud_rate || 9600);

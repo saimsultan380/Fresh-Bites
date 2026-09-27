@@ -10,19 +10,63 @@ const ESC = 0x1b;
 const GS = 0x1d;
 
 export function paperCols(widthMm: number): number {
+  // Conservative printable columns (Font A) so right edge never clips on cheap 58/80mm heads
   return widthMm === 58 ? 32 : 42;
 }
 
 export function dashLine(cols: number): string {
-  return '-'.repeat(cols);
+  return '-'.repeat(Math.max(8, cols));
 }
 
 export function padRow(left: string, right: string, cols: number): string {
   const gap = 1;
-  const maxLeft = Math.max(4, cols - right.length - gap);
-  const clippedLeft = left.length > maxLeft ? left.slice(0, maxLeft) : left;
-  const spaces = Math.max(gap, cols - clippedLeft.length - right.length);
-  return clippedLeft + ' '.repeat(spaces) + right;
+  const safeCols = Math.max(8, cols);
+  let rightText = String(right ?? '');
+  let leftText = String(left ?? '');
+
+  // Keep amounts/values fully visible; trim the label side first.
+  if (rightText.length > safeCols - 2) {
+    rightText = rightText.slice(0, safeCols - 2);
+  }
+
+  const maxLeft = Math.max(1, safeCols - rightText.length - gap);
+  if (leftText.length > maxLeft) {
+    leftText = leftText.slice(0, maxLeft);
+  }
+
+  const spaces = Math.max(gap, safeCols - leftText.length - rightText.length);
+  return leftText + ' '.repeat(spaces) + rightText;
+}
+
+/** Flatten receipt lines into exact printer-width text rows (for preview / WhatsApp). */
+export function flattenReceiptLines(lines: ReceiptLine[], cols: number): string[] {
+  const out: string[] = [];
+  for (const line of lines) {
+    if (line.kind === 'blank') {
+      out.push('');
+      continue;
+    }
+    if (line.kind === 'sep') {
+      out.push(dashLine(cols));
+      continue;
+    }
+    if (line.kind === 'row') {
+      out.push(padRow(line.left, line.right, cols));
+      continue;
+    }
+    const width = line.double ? Math.floor(cols / 2) : cols;
+    wrapText(line.text, width).forEach((part) => {
+      if (line.align === 'center') {
+        const pad = Math.max(0, Math.floor((width - part.length) / 2));
+        out.push(' '.repeat(pad) + part);
+      } else if (line.align === 'right') {
+        out.push(part.padStart(width, ' '));
+      } else {
+        out.push(part);
+      }
+    });
+  }
+  return out;
 }
 
 export function wrapText(text: string, cols: number): string[] {
@@ -91,10 +135,11 @@ export class EscPosEncoder {
 
   cut(mode: 'full' | 'partial' = 'partial'): this {
     if (mode === 'full') {
+      // Full cut with no extra feed unit
       this.chunks.push(GS, 0x56, 0x00);
     } else {
-      // Feed-and-cut — works on XPrinter / Rongta / Epson TM clones
-      this.chunks.push(GS, 0x56, 0x42, 0x00);
+      // Partial cut (no feed) — keeps slip length tight after footer
+      this.chunks.push(GS, 0x56, 0x01);
     }
     return this;
   }

@@ -163,37 +163,65 @@
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
-/* Thermal receipt print (browser fallback) */
+/* Thermal receipt print — POS-80 / Windows driver (browser print) */
 @media print {
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    width: 80mm !important;
+  }
+
   body * {
     visibility: hidden;
   }
+
   #thermal-receipt,
   #thermal-receipt * {
     visibility: visible;
   }
+
   #thermal-receipt {
     position: absolute;
     left: 0;
     top: 0;
     margin: 0 !important;
-    padding: 2mm !important;
-    font-family: var(--font-mono), 'Courier New', Courier, monospace !important;
+    padding: 1mm 1.5mm 2mm !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
     color: #000000 !important;
     background: #ffffff !important;
     box-shadow: none !important;
     border: none !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
   }
-  #thermal-receipt[data-paper="58"] {
-    width: 58mm !important;
-    max-width: 58mm !important;
+
+  #thermal-receipt pre {
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: pre !important;
+    overflow: hidden !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
   }
-  #thermal-receipt[data-paper="80"] {
-    width: 80mm !important;
-    max-width: 80mm !important;
+
+  #thermal-receipt[data-paper='58'] {
+    width: 48mm !important;
+    max-width: 48mm !important;
   }
+
+  #thermal-receipt[data-paper='80'] {
+    width: 72mm !important;
+    max-width: 72mm !important;
+  }
+
+  /* Continuous roll — height follows content (no long blank page) */
   @page {
     size: 80mm auto;
-    margin: 0mm;
+    margin: 0;
   }
 }
